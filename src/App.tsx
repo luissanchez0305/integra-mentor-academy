@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import CourseDetail from './pages/CourseDetail';
 import CourseVideo from './pages/CourseVideo';
 import Cart from './pages/Cart';
+import CreateCourse from './pages/CreateCourse';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/course/:id" element={<CourseDetail />} />
             <Route path="/course/:id/learn" element={<CourseVideo />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/create-course" element={<CreateCourse />} />
           </Routes>
         </main>
         <Footer />
