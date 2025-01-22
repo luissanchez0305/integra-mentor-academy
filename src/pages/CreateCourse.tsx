@@ -1,8 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Upload, Save } from 'lucide-react';
+import { Plus, Minus, Save } from 'lucide-react';
 import { courseService, CourseInput, SectionInput } from '../services/courseService';
 import { useAuth } from '../contexts/AuthContext';
+import { Carousel } from 'react-responsive-carousel';
+import 'react-responsive-carousel/lib/styles/carousel.min.css';
+import { supabase } from '../lib/supabase';
+
+// Add this CSS to style the Carousel images and file input
+const carouselImageStyle = {
+  maxHeight: '150px', // Adjust the height as needed
+  objectFit: 'cover',
+};
+
+const fileInputStyle = {
+  display: 'block',
+  width: '100%',
+  padding: '0.5rem',
+  borderRadius: '0.375rem',
+  border: '1px solid #d1d5db',
+  backgroundColor: '#f9fafb',
+  color: '#374151',
+  cursor: 'pointer',
+  marginTop: '0.25rem',
+  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  transition: 'background-color 0.2s ease-in-out',
+};
 
 export default function CreateCourse() {
   const navigate = useNavigate();
@@ -34,6 +57,9 @@ export default function CreateCourse() {
       lessons: [{ title: '', videoUrl: '' }],
     },
   ]);
+
+  const [images, setImages] = useState<File[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   const handleCourseInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -128,6 +154,39 @@ export default function CreateCourse() {
     });
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newImages = Array.from(files);
+      setImages((prev) => [...prev, ...newImages]);
+
+      // Upload images to Supabase
+      const uploadedUrls = await Promise.all(
+        newImages.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const filePath = `${user!.id}/image.${fileExt}`;
+          const { error } = await supabase.storage
+            .from('course-images')
+            .upload(filePath, file, {
+              upsert: true,
+            });
+
+          if (error) {
+            console.error('Error uploading image:', error);
+            return '';
+          }
+          const { data: { publicUrl } } = supabase.storage
+            .from('course-images')
+            .getPublicUrl(filePath);
+
+          return publicUrl;
+        })
+      );
+
+      setImageUrls((prev) => [...prev, ...uploadedUrls.filter((url) => url)]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -135,8 +194,8 @@ export default function CreateCourse() {
     try {
       setLoading(true);
       setError(null);
-      await courseService.createCourse(courseData, sections);
-      navigate('/profile');
+      const course = await courseService.createCourse({ ...courseData, images: imageUrls }, sections);
+      navigate(`/course/${course.id}`);
     } catch (err) {
       console.error('Error creating course:', err);
       setError('Failed to create course. Please try again.');
@@ -149,7 +208,7 @@ export default function CreateCourse() {
     <div className="min-h-screen pt-24 pb-12 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Create New Course</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Crear Nuevo Curso</h1>
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-400 text-red-700 rounded">
@@ -160,22 +219,38 @@ export default function CreateCourse() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Información Básica</h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Course Title</label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={courseData.title}
-                    onChange={handleCourseInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Título del Curso</label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={courseData.title}
+                      onChange={handleCourseInputChange}
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Precio ($)</label>
+                    <input
+                      type="number"
+                      name="price"
+                      value={courseData.price}
+                      onChange={handleCourseInputChange}
+                      min="0"
+                      step="0.01"
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <label className="block text-sm font-medium text-gray-700">Descripción</label>
                   <textarea
                     name="description"
                     value={courseData.description}
@@ -187,36 +262,30 @@ export default function CreateCourse() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Thumbnail URL</label>
+                  <label className="block text-sm font-medium text-gray-700">Subir Imágenes</label>
                   <input
-                    type="url"
-                    name="thumbnailUrl"
-                    value={courseData.thumbnailUrl}
-                    onChange={handleCourseInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    style={fileInputStyle}
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Price ($)</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={courseData.price}
-                    onChange={handleCourseInputChange}
-                    min="0"
-                    step="0.01"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  {imageUrls.length > 0 && (
+                    <Carousel showThumbs={false}>
+                      {imageUrls.map((url, index) => (
+                        <div key={index}>
+                          <img src={url} alt={`Course Image ${index + 1}`} style={carouselImageStyle} />
+                        </div>
+                      ))}
+                    </Carousel>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* What Will Learn */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">What Students Will Learn</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Lo que Aprenderán los Estudiantes</h2>
               <div className="space-y-2">
                 {courseData.whatWillLearn.map((item, index) => (
                   <div key={index} className="flex gap-2">
@@ -225,7 +294,7 @@ export default function CreateCourse() {
                       value={item}
                       onChange={(e) => handleArrayInputChange(index, e.target.value, 'whatWillLearn')}
                       className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Learning objective"
+                      placeholder="Objetivo de aprendizaje"
                     />
                     <button
                       type="button"
@@ -242,14 +311,14 @@ export default function CreateCourse() {
                   className="mt-2 inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Learning Objective
+                  Añadir Objetivo de Aprendizaje
                 </button>
               </div>
             </div>
 
             {/* Requirements */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Requirements</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Requisitos del Curso</h2>
               <div className="space-y-2">
                 {courseData.requirements.map((item, index) => (
                   <div key={index} className="flex gap-2">
@@ -258,7 +327,7 @@ export default function CreateCourse() {
                       value={item}
                       onChange={(e) => handleArrayInputChange(index, e.target.value, 'requirements')}
                       className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Requirement"
+                      placeholder="Requisito"
                     />
                     <button
                       type="button"
@@ -275,17 +344,17 @@ export default function CreateCourse() {
                   className="mt-2 inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Requirement
+                  Añadir Requisito
                 </button>
               </div>
             </div>
 
             {/* Course Includes */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Includes</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">El Curso Incluye</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Video Hours</label>
+                  <label className="block text-sm font-medium text-gray-700">Horas de Video</label>
                   <input
                     type="number"
                     value={courseData.includes.videoHours}
@@ -295,9 +364,7 @@ export default function CreateCourse() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Downloadable Resources
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Recursos Descargables</label>
                   <input
                     type="number"
                     value={courseData.includes.downloadableResources}
@@ -309,7 +376,7 @@ export default function CreateCourse() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Articles</label>
+                  <label className="block text-sm font-medium text-gray-700">Artículos</label>
                   <input
                     type="number"
                     value={courseData.includes.articles}
@@ -319,7 +386,7 @@ export default function CreateCourse() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Coding Exercises</label>
+                  <label className="block text-sm font-medium text-gray-700">Ejercicios de Codificación</label>
                   <input
                     type="number"
                     value={courseData.includes.codingExercises}
@@ -329,7 +396,7 @@ export default function CreateCourse() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Homework Assignments</label>
+                  <label className="block text-sm font-medium text-gray-700">Tareas</label>
                   <input
                     type="number"
                     value={courseData.includes.homework}
@@ -343,7 +410,7 @@ export default function CreateCourse() {
 
             {/* Course Access */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Access</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Acceso al Curso</h2>
               <div className="space-y-4">
                 <div className="flex items-center">
                   <input
@@ -356,7 +423,7 @@ export default function CreateCourse() {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="hasCertificate" className="ml-2 block text-sm text-gray-700">
-                    Include Certificate of Completion
+                    Incluir Certificado de Finalización
                   </label>
                 </div>
 
@@ -371,19 +438,19 @@ export default function CreateCourse() {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="isLifetimeAccess" className="ml-2 block text-sm text-gray-700">
-                    Lifetime Access
+                    Acceso de por Vida
                   </label>
                 </div>
 
                 {!courseData.isLifetimeAccess && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Access Duration</label>
+                    <label className="block text-sm font-medium text-gray-700">Duración del Acceso</label>
                     <input
                       type="text"
                       name="accessDuration"
                       value={courseData.accessDuration || ''}
                       onChange={handleCourseInputChange}
-                      placeholder="e.g., 6 months"
+                      placeholder="ej., 6 meses"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -393,7 +460,7 @@ export default function CreateCourse() {
 
             {/* Course Content */}
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Course Content</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Contenido del Curso</h2>
               <div className="space-y-6">
                 {sections.map((section, sectionIndex) => (
                   <div key={sectionIndex} className="border rounded-lg p-4">
@@ -402,7 +469,7 @@ export default function CreateCourse() {
                         type="text"
                         value={section.title}
                         onChange={(e) => handleSectionChange(sectionIndex, e.target.value)}
-                        placeholder="Section Title"
+                        placeholder="Título de la Sección"
                         className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                       />
                       <button
@@ -424,7 +491,7 @@ export default function CreateCourse() {
                               onChange={(e) =>
                                 handleLessonChange(sectionIndex, lessonIndex, 'title', e.target.value)
                               }
-                              placeholder="Lesson Title"
+                              placeholder="Título de la Lección"
                               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             />
                             <input
@@ -438,7 +505,7 @@ export default function CreateCourse() {
                                   e.target.value
                                 )
                               }
-                              placeholder="Video URL"
+                              placeholder="URL del Video"
                               className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             />
                           </div>
@@ -457,7 +524,7 @@ export default function CreateCourse() {
                         className="mt-2 inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                       >
                         <Plus className="h-4 w-4 mr-1" />
-                        Add Lesson
+                        Añadir Lección
                       </button>
                     </div>
                   </div>
@@ -468,7 +535,7 @@ export default function CreateCourse() {
                   className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Section
+                  Añadir Sección
                 </button>
               </div>
             </div>
@@ -479,7 +546,7 @@ export default function CreateCourse() {
                 onClick={() => navigate('/profile')}
                 className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="submit"
@@ -487,11 +554,11 @@ export default function CreateCourse() {
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 {loading ? (
-                  'Creating Course...'
+                  'Creando Curso...'
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Create Course
+                    Crear Curso
                   </>
                 )}
               </button>
