@@ -1,10 +1,11 @@
 import { supabase } from '../lib/supabase';
 
 export interface CourseInput {
+  instructor_id: string;
   title: string;
   description: string;
   price: number;
-  thumbnailUrl: string;
+  introVideoUrl: string;
   hasCertificate: boolean;
   isLifetimeAccess: boolean;
   accessDuration?: string;
@@ -29,14 +30,15 @@ export interface SectionInput {
 }
 
 export const courseService = {
-  async createCourse(courseData: CourseInput, sections: SectionInput[]) {
+  async createCourse(courseData: CourseInput, sections: SectionInput[], images: string[]) {
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .insert({
+        instructor_id: courseData.instructor_id,
         title: courseData.title,
         description: courseData.description,
         price: courseData.price,
-        thumbnail_url: courseData.thumbnailUrl,
+        intro_video_url: courseData.introVideoUrl,
         has_certificate: courseData.hasCertificate,
         is_lifetime_access: courseData.isLifetimeAccess,
         access_duration: courseData.accessDuration,
@@ -56,6 +58,18 @@ export const courseService = {
       });
 
     if (detailsError) throw detailsError;
+
+    // Insert images into course_images table
+    const imagesToInsert = images.map((imageUrl) => ({
+      course_id: course.id,
+      image_url: imageUrl,
+    }));
+
+    const { error: imagesError } = await supabase
+      .from('course_images')
+      .insert(imagesToInsert);
+
+    if (imagesError) throw imagesError;
 
     // Create sections and lessons
     for (let i = 0; i < sections.length; i++) {
@@ -89,5 +103,41 @@ export const courseService = {
     }
 
     return course;
+  },
+
+  async getCourseById(courseId: string) {
+    const { data: course, error } = await supabase
+      .from('courses')
+      .select(`
+        id,
+        instructor_id,
+        title,
+        description,
+        price,
+        intro_video_url,
+        has_certificate,
+        is_lifetime_access,
+        access_duration,
+        difficulty,
+        updated_at,
+        course_details:course_details (
+          what_will_learn,
+          requirements,
+          includes
+        )
+      `)
+      .eq('id', courseId)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      ...course,
+      course_details: {
+        what_will_learn: course.course_details[0].what_will_learn,
+        requirements: course.course_details[0].requirements,
+        includes: course.course_details[0].includes,
+      }
+    };
   },
 };

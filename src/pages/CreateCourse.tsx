@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Save } from 'lucide-react';
+import { Plus, Minus, Save, X } from 'lucide-react';
 import { courseService, CourseInput, SectionInput } from '../services/courseService';
 import { useAuth } from '../contexts/AuthContext';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { supabase } from '../lib/supabase';
 
-// Add this CSS to style the Carousel images and file input
 const carouselImageStyle = {
-  maxHeight: '150px', // Adjust the height as needed
+  maxHeight: '400px',
   objectFit: 'cover',
+};
+
+const thumbnailStyle = {
+  maxHeight: '80px',
+  objectFit: 'cover',
+  cursor: 'pointer',
+  borderRadius: '4px',
 };
 
 const fileInputStyle = {
@@ -34,10 +40,11 @@ export default function CreateCourse() {
   const [error, setError] = useState<string | null>(null);
 
   const [courseData, setCourseData] = useState<CourseInput>({
+    instructor_id: user!.id,
     title: '',
     description: '',
+    introVideoUrl: '',
     price: 0,
-    thumbnailUrl: '',
     hasCertificate: false,
     isLifetimeAccess: true,
     whatWillLearn: [''],
@@ -156,6 +163,7 @@ export default function CreateCourse() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    console.log('files', files);
     if (files) {
       const newImages = Array.from(files);
       setImages((prev) => [...prev, ...newImages]);
@@ -164,7 +172,9 @@ export default function CreateCourse() {
       const uploadedUrls = await Promise.all(
         newImages.map(async (file) => {
           const fileExt = file.name.split('.').pop();
-          const filePath = `${user!.id}/image.${fileExt}`;
+          const datetimeTick = new Date().toISOString().split('T')[0];
+          const fileNameWithDateTime = `${file.name.split('.')[0]}_${datetimeTick}.${fileExt}`;
+          const filePath = `${user!.id}/${fileNameWithDateTime}`;
           const { error } = await supabase.storage
             .from('course-images')
             .upload(filePath, file, {
@@ -184,6 +194,7 @@ export default function CreateCourse() {
       );
 
       setImageUrls((prev) => [...prev, ...uploadedUrls.filter((url) => url)]);
+      console.log('imageUrls', imageUrls);
     }
   };
 
@@ -194,7 +205,14 @@ export default function CreateCourse() {
     try {
       setLoading(true);
       setError(null);
-      const course = await courseService.createCourse({ ...courseData, images: imageUrls }, sections);
+      const course = await courseService.createCourse(
+        { 
+          ...courseData, 
+          instructor_id: user.id 
+        }, 
+        sections,
+        imageUrls
+      );
       navigate(`/course/${course.id}`);
     } catch (err) {
       console.error('Error creating course:', err);
@@ -262,22 +280,97 @@ export default function CreateCourse() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Subir Imágenes</label>
+                  <label className="block text-sm font-medium text-gray-700">Intro Video URL</label>
+                  <input
+                    type="url"
+                    name="introVideoUrl"
+                    value={courseData.introVideoUrl}
+                    onChange={handleCourseInputChange}
+                    placeholder="https://example.com/video"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Subir Imágenes</label>
                   <input
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={handleImageUpload}
-                    style={fileInputStyle}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-md file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100
+                      cursor-pointer border rounded-md p-2"
                   />
+                  
                   {imageUrls.length > 0 && (
-                    <Carousel showThumbs={false}>
-                      {imageUrls.map((url, index) => (
-                        <div key={index}>
-                          <img src={url} alt={`Course Image ${index + 1}`} style={carouselImageStyle} />
+                    <div className="mt-4">
+                      <div className="bg-white p-4 rounded-lg shadow-sm border">
+                        {/* Main Carousel */}
+                        <Carousel
+                          showThumbs={true}
+                          showStatus={false}
+                          infiniteLoop={true}
+                          showIndicators={true}
+                          renderThumbs={(children) =>
+                            children.map((item, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={imageUrls[index]}
+                                  alt={`Thumbnail ${index + 1}`}
+                                  style={thumbnailStyle}
+                                  className="rounded transition-opacity group-hover:opacity-80"
+                                />
+                                <button
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const newUrls = imageUrls.filter((_, i) => i !== index);
+                                    setImageUrls(newUrls);
+                                    const newImages = images.filter((_, i) => i !== index);
+                                    setImages(newImages);
+                                  }}
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Remove image"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))
+                          }
+                          thumbWidth={80}
+                        >
+                          {imageUrls.map((url, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={url}
+                                alt={`Course Image ${index + 1}`}
+                                style={carouselImageStyle}
+                                className="rounded-lg"
+                              />
+                            </div>
+                          ))}
+                        </Carousel>
+
+                        {/* Image Count and Info */}
+                        <div className="mt-4 text-sm text-gray-600 flex justify-between items-center">
+                          <span>{imageUrls.length} {imageUrls.length === 1 ? 'imagen subida' : 'imágenes subidas'}</span>
+                          <button
+                            onClick={() => {
+                              setImages([]);
+                              setImageUrls([]);
+                            }}
+                            className="text-red-600 hover:text-red-700 font-medium"
+                          >
+                            Eliminar todas
+                          </button>
                         </div>
-                      ))}
-                    </Carousel>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

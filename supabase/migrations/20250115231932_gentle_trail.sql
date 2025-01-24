@@ -35,7 +35,8 @@ CREATE TABLE IF NOT EXISTS courses (
 
 -- Create course details table for additional information
 CREATE TABLE IF NOT EXISTS course_details (
-  course_id uuid PRIMARY KEY REFERENCES courses(id) ON DELETE CASCADE,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  course_id uuid REFERENCES courses(id) ON DELETE CASCADE,
   what_will_learn text[] DEFAULT '{}',
   requirements text[] DEFAULT '{}',
   includes jsonb DEFAULT '{
