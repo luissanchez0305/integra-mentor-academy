@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, CreditCard, Lock } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { courseService } from '../services/courseService';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Cart() {
   const { cartItems, removeFromCart } = useCart();
+  const { user } = useAuth();
   const [billingInfo, setBillingInfo] = useState({
     cardNumber: '',
     cardName: '',
@@ -16,6 +19,7 @@ export default function Cart() {
     zipCode: '',
     country: ''
   });
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBillingInfo({
@@ -24,9 +28,33 @@ export default function Cart() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement payment processing logic
+
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const courseDetails = cartItems.map(item => ({
+        courseId: item.course.id,
+        title: item.course.title,
+        price: item.course.price,
+        quantity: item.quantity,
+      }));
+
+      await courseService.addUserPayment(user.id, total, tax, courseDetails);
+
+      // Extract course IDs to add to user_courses
+      const courseIds = cartItems.map(item => item.course.id);
+      await courseService.addUserCourses(user.id, courseIds);
+
+      // Navigate to the profile view after successful payment
+      navigate('/profile');
+    } catch (error) {
+      console.error('Payment processing failed:', error);
+    }
   };
 
   console.log('cartItems', cartItems);

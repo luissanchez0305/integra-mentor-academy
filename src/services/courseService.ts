@@ -170,4 +170,32 @@ export const courseService = {
 
     return coursesWithDetails;
   },
+
+  async addUserPayment(userId: string, total: number, taxed: number, courseDetails: any) {
+    const { data, error } = await supabase
+      .from('user_payments')
+      .insert({
+        user_id: userId,
+        total,
+        taxed,
+        course_details: courseDetails,
+      });
+
+    if (error) throw error;
+
+    return data;
+  },
+  
+  async addUserCourses(userId: string, courseIds: string[]) {
+    const coursesToInsert = courseIds.map(courseId => ({
+      user_id: userId,
+      course_id: courseId,
+    }));
+
+    const { error } = await supabase
+      .from('user_courses')
+      .insert(coursesToInsert);
+
+    if (error) throw error;
+  },
 };
