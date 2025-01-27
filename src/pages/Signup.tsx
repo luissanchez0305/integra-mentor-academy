@@ -10,12 +10,22 @@ export default function Signup() {
     phone: '',
     password: '',
     confirmPassword: '',
-    role: 'student'
+    role: 'student',
+    areaCode: '+507'
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signUp } = useAuth();
+
+  // Array of area codes (can be fetched from an API in the future)
+  const [areaCodes] = useState([
+    { code: '+507', country: 'PA', flag: '🇵🇦' },
+    { code: '+1', country: 'US', flag: '🇺🇸' },
+    { code: '+52', country: 'MX', flag: '🇲🇽' },
+    { code: '+54', country: 'AR', flag: '🇦🇷' },
+    // Add more area codes as needed
+  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -34,9 +44,10 @@ export default function Signup() {
     try {
       setError('');
       setLoading(true);
+      const fullPhoneNumber = `${formData.areaCode}${formData.phone}`;
       await signUp(formData.email, formData.password, {
         name: formData.name,
-        phone: formData.phone,
+        phone: fullPhoneNumber,
         role: formData.role
       });
       navigate('/');
@@ -161,7 +172,19 @@ export default function Signup() {
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Phone Number
                 </label>
-                <div className="mt-1 relative">
+                <div className="mt-1 relative flex">
+                  <select
+                    name="areaCode"
+                    value={formData.areaCode}
+                    onChange={handleChange}
+                    className="appearance-none block px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {areaCodes.map(({ code, country, flag }) => (
+                      <option key={code} value={code}>
+                        {flag} {country} ({code})
+                      </option>
+                    ))}
+                  </select>
                   <input
                     id="phone"
                     name="phone"
@@ -169,13 +192,12 @@ export default function Signup() {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    className="appearance-none block w-full px-3 py-2 pl-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="appearance-none block w-full px-3 py-2 pl-10 border border-gray-300 rounded-r-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   />
-                  <Phone className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
                 </div>
               </div>
 
-              <div>
+              <div hidden>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700">
                   I want to
                 </label>

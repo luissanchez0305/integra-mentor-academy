@@ -10,7 +10,7 @@ export interface User {
 export interface Course {
   id: string;
   title: string;
-  instructor: string;
+  instructor_id: string;
   description: string;
   price: number;
   sale_price: number;
@@ -37,7 +37,7 @@ export interface Course {
   rating: number;
   reviews: number;
   thumbnail: string;
-  duration: string;
+  duration: number;
   lessons: number;
   category: string;
 }

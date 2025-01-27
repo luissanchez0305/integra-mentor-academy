@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, LogIn, UserPlus, Menu, X, ShoppingCart, User, LogOut, PlusCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,6 +11,7 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { cartItems, clearCart } = useCart();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +23,8 @@ export default function Header() {
   const handleSignOut = async () => {
     try {
       await signOut();
+      localStorage.setItem('cartItems', JSON.stringify([]));
+      clearCart();
       navigate('/');
     } catch (error) {
       console.error('Error signing out:', error);
@@ -85,7 +89,7 @@ export default function Header() {
             >
               <ShoppingCart className="h-6 w-6" />
               <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                0
+                {cartItems.length}
               </span>
             </Link>
 

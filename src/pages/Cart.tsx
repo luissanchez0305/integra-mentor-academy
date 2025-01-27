@@ -1,30 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, CreditCard, Lock } from 'lucide-react';
-import { CartItem } from '../types';
-
-// Mock data - Replace with actual cart data from your state management
-const mockCartItems: CartItem[] = [
-  {
-    course: {
-      id: '1',
-      title: 'Complete Web Development Bootcamp',
-      instructor: 'John Doe',
-      description: 'Learn web development from scratch',
-      price: 99.99,
-      rating: 4.8,
-      reviews: 1234,
-      thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159',
-      duration: '32 hours',
-      lessons: 280,
-      category: 'Web Development'
-    },
-    quantity: 1
-  }
-];
+import { useCart } from '../contexts/CartContext';
 
 export default function Cart() {
-  const [cartItems] = useState<CartItem[]>(mockCartItems);
+  const { cartItems, removeFromCart } = useCart();
   const [billingInfo, setBillingInfo] = useState({
     cardNumber: '',
     cardName: '',
@@ -49,6 +29,7 @@ export default function Cart() {
     // Implement payment processing logic
   };
 
+  console.log('cartItems', cartItems);
   const subtotal = cartItems.reduce((sum, item) => sum + item.course.price * item.quantity, 0);
   const tax = subtotal * 0.1; // 10% tax
   const total = subtotal + tax;
@@ -58,13 +39,13 @@ export default function Cart() {
       <div className="min-h-screen pt-24 pb-12 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Your Cart is Empty</h2>
-            <p className="text-gray-600 mb-8">Looks like you haven't added any courses yet.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">No se ha seleccionado ningun curso</h2>
+            <p className="text-gray-600 mb-8">Parece que aún no has agregado ningún curso.</p>
             <Link
               to="/"
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
             >
-              Browse Courses
+              Explorar Cursos
             </Link>
           </div>
         </div>
@@ -99,6 +80,7 @@ export default function Cart() {
                         <button
                           className="text-red-600 hover:text-red-700 flex items-center"
                           aria-label="Remove item"
+                          onClick={() => removeFromCart(item)}
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>

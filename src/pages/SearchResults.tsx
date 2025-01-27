@@ -1,57 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, Star } from 'lucide-react';
 import { Course } from '../types';
-
-// Mock data for demonstration
-const mockCourses: Course[] = [
-  {
-    id: '1',
-    title: 'Complete Web Development Bootcamp',
-    instructor: 'John Doe',
-    description: 'Learn web development from scratch with this comprehensive course',
-    price: 99.99,
-    rating: 4.8,
-    reviews: 1234,
-    thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159',
-    duration: '32 hours',
-    lessons: 280,
-    category: 'Web Development'
-  },
-  {
-    id: '2',
-    title: 'Python for Data Science',
-    instructor: 'Jane Smith',
-    description: 'Master Python for data analysis and machine learning',
-    price: 89.99,
-    rating: 4.7,
-    reviews: 856,
-    thumbnail: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935',
-    duration: '28 hours',
-    lessons: 240,
-    category: 'Data Science'
-  },
-  {
-    id: '3',
-    title: 'UI/UX Design Fundamentals',
-    instructor: 'Mike Wilson',
-    description: 'Learn modern UI/UX design principles and tools',
-    price: 79.99,
-    rating: 4.9,
-    reviews: 567,
-    thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5',
-    duration: '24 hours',
-    lessons: 200,
-    category: 'Design'
-  },
-  // Add more mock courses as needed
-];
+import { courseService } from '../services/courseService'; // Import the courseService
+import CourseCard from '../components/CourseCard';
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const [priceFilter, setPriceFilter] = useState('all');
   const [ratingFilter, setRatingFilter] = useState('all');
+  const [courses, setCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const data = await courseService.getCoursesByTitle(query);
+        setCourses(data);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+
+    fetchCourses();
+  }, [query]);
 
   return (
     <div className="min-h-screen pt-24 pb-12 bg-gray-50">
@@ -60,7 +32,7 @@ export default function SearchResults() {
           <h1 className="text-3xl font-bold text-gray-900">
             Search Results for "{query}"
           </h1>
-          <p className="text-gray-600">{mockCourses.length} courses found</p>
+          <p className="text-gray-600">{courses.length} courses found</p>
         </div>
 
         <div className="flex gap-8">
@@ -122,43 +94,8 @@ export default function SearchResults() {
           {/* Course Grid */}
           <div className="flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockCourses.map((course) => (
-                <div key={course.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {course.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-2">{course.instructor}</p>
-                    <div className="flex items-center mb-2">
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                        <span className="ml-1 text-sm font-medium text-gray-900">
-                          {course.rating}
-                        </span>
-                      </div>
-                      <span className="mx-1 text-gray-400">•</span>
-                      <span className="text-sm text-gray-600">
-                        {course.reviews.toLocaleString()} reviews
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {course.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-gray-900">
-                        ${course.price.toFixed(2)}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {course.duration}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
               ))}
             </div>
           </div>

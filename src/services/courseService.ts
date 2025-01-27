@@ -140,4 +140,34 @@ export const courseService = {
       }
     };
   },
+
+  async getCoursesByTitle(querySearch: string) {
+
+    const query = supabase
+      .from('courses')
+      .select(`
+        *,
+        course_images (
+          image_url
+        ),
+        course_details (
+          includes
+        )
+      `)
+      .ilike('title', `%${querySearch}%`);
+
+    const { data, error } = await query;
+    console.log('data', data);
+
+    if (error) throw error;
+
+    // Map the data to include the thumbnail and duration
+    const coursesWithDetails = data.map(course => ({
+      ...course,
+      thumbnail: course.course_images[0]?.image_url || '', // Assuming the first image is the thumbnail
+      duration: course.course_details[0]?.includes?.videoHours || 0, // Extracting videoHours as duration
+    }));
+
+    return coursesWithDetails;
+  },
 };

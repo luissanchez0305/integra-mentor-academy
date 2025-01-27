@@ -2,12 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { Course } from '../types';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface CourseCardProps {
   course: Course;
 }
 
 export default function CourseCard({ course }: CourseCardProps) {
+  const { addToCart } = useCart();
+  const { user } = useAuth();
   return (
     <Link to={`/course/${course.id}`} className="block">
       <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
@@ -27,10 +31,24 @@ export default function CourseCard({ course }: CourseCardProps) {
             <span className="mx-1 text-gray-400">•</span>
             <span className="text-sm text-gray-600">{course.reviews} reviews</span>
           </div>
+          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+            {course.description}
+          </p>
           <div className="flex items-center justify-between">
             <span className="text-lg font-bold text-gray-900">${course.price}</span>
-            <span className="text-sm text-gray-600">{course.duration}</span>
+            <span className="text-sm text-gray-600">{course.duration > 0 ? `${course.duration} hours` : ''} </span>
           </div>
+          {course.instructor_id !== user?.id && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                addToCart({ course, quantity: 1 });
+              }}
+              className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Add to Cart
+            </button>
+          )}
         </div>
       </div>
     </Link>

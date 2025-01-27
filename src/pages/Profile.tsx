@@ -289,7 +289,7 @@ export default function Profile() {
                           name="phone"
                           value={formData.phone?.split(' ')[1] || ''}
                           onChange={(e) => {
-                            const code = formData.phone?.split(' ')[0] || '+1';
+                            const code = formData.phone?.split(' ')[0] || '+507';
                             setFormData(prev => ({
                               ...prev,
                               phone: `${code} ${e.target.value}`
