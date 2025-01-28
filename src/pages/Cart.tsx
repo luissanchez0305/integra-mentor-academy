@@ -57,7 +57,6 @@ export default function Cart() {
     }
   };
 
-  console.log('cartItems', cartItems);
   const subtotal = cartItems.reduce((sum, item) => sum + item.course.price * item.quantity, 0);
   const tax = subtotal * 0.1; // 10% tax
   const total = subtotal + tax;

@@ -66,29 +66,31 @@ export default function Profile() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/login');
       return;
     }
 
     async function loadProfile() {
-      try {
-        setLoading(true);
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+      if (user) {
+        try {
+          setLoading(true);
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
 
-        if (profileError) throw profileError;
+          if (profileError) throw profileError;
 
-        setProfile(data);
-        setFormData(data);
-      } catch (err) {
-        console.error('Error loading profile:', err);
-        setError('Failed to load profile data');
-      } finally {
-        setLoading(false);
+          setProfile(data);
+          setFormData(data);
+        } catch (err) {
+          console.error('Error loading profile:', err);
+          setError('Failed to load profile data');
+        } finally {
+          setLoading(false);
+        }
       }
     }
 
