@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Plus, Minus, Save, X } from 'lucide-react';
 import { courseService, CourseInput, SectionInput } from '../services/courseService';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,13 +34,14 @@ const fileInputStyle = {
 };
 
 export default function CreateCourse() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateCreatedCourses } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [courseData, setCourseData] = useState<CourseInput>({
-    instructor_id: user!.id,
+    instructor_id: user?.id || '',
     title: '',
     description: '',
     introVideoUrl: '',
@@ -56,6 +57,7 @@ export default function CreateCourse() {
       codingExercises: 0,
       homework: 0,
     },
+    salePrice: 0,
   });
 
   const [sections, setSections] = useState<SectionInput[]>([
@@ -67,6 +69,43 @@ export default function CreateCourse() {
 
   const [images, setImages] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  const isEditMode = Boolean(id);
+
+  useEffect(() => {
+    if (id) {
+      // Fetch course data by ID and populate the form
+      const fetchCourseData = async () => {
+        try {
+          const course = await courseService.getCourseById(id);
+          course.whatWillLearn = course.course_details[0].what_will_learn;
+          course.requirements = course.course_details[0].requirements;
+          course.includes = course.course_details[0].includes;
+          course.salePrice = course.sale_price;
+          course.introVideoUrl = course.intro_video_url;
+          
+          
+          setCourseData(course);
+          const sections = course.course_sections.map(
+            (section: { title: string; position: number; course_lessons: { title: string; video_url: string }[] }) => ({
+              title: section.title,
+              position: section.position,
+              lessons: section.course_lessons.map((lesson: { title: string; video_url: string }) => ({
+                title: lesson.title,
+                videoUrl: lesson.video_url
+              }))
+            })
+          );
+          setSections(sections);
+          setImageUrls(course.course_images.map((image: { image_url: string }) => image.image_url));
+        } catch (err) {
+          console.error('Error fetching course data:', err);
+          setError('Failed to load course data. Please try again.');
+        }
+      };
+      fetchCourseData();
+    }
+  }, [id]);
 
   const handleCourseInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -205,18 +244,35 @@ export default function CreateCourse() {
     try {
       setLoading(true);
       setError(null);
-      const course = await courseService.createCourse(
-        { 
-          ...courseData, 
-          instructor_id: user.id 
-        }, 
-        sections,
-        imageUrls
-      );
-      navigate(`/course/${course.id}`);
+
+      if (isEditMode) {
+        // Update the course
+        await courseService.updateCourse(
+          id!, // Assuming id is defined if isEditMode is true
+          { 
+            ...courseData, 
+            instructor_id: user.id 
+          }, 
+          sections,
+          imageUrls
+        );
+        navigate(`/course/${id}`);
+      } else {
+        // Create a new course
+        const course = await courseService.createCourse(
+          { 
+            ...courseData, 
+            instructor_id: user.id 
+          }, 
+          sections,
+          imageUrls
+        );
+        navigate(`/course/${course.id}`);
+      }
+      await updateCreatedCourses(user.id);
     } catch (err) {
-      console.error('Error creating course:', err);
-      setError('Failed to create course. Please try again.');
+      console.error('Error creating or updating course:', err);
+      setError('Failed to save course. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -266,6 +322,24 @@ export default function CreateCourse() {
                     />
                   </div>
                 </div>
+
+                {isEditMode && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>&nbsp;</div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Precio de oferta ($)</label>
+                      <input
+                        type="number"
+                        name="salePrice"
+                        value={courseData.salePrice}
+                        onChange={handleCourseInputChange}
+                        min="0"
+                        step="0.01"
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Descripción</label>
@@ -647,11 +721,11 @@ export default function CreateCourse() {
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 {loading ? (
-                  'Creando Curso...'
+                  isEditMode ? 'Editando Curso...' : 'Creando Curso...'
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Crear Curso
+                    {isEditMode ? 'Editar Curso' : 'Crear Curso'}
                   </>
                 )}
               </button>

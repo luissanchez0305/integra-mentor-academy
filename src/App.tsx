@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
@@ -28,6 +28,7 @@ export default function App() {
             <Route path="/course/:id/learn" element={<CourseVideo />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/create-course" element={<CreateCourse />} />
+            <Route path="/create-course/:id?" element={<CreateCourse />} />
           </Routes>
         </main>
         <Footer />

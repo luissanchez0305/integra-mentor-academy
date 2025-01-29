@@ -6,8 +6,8 @@ import { courseService } from '../services/courseService';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Cart() {
-  const { cartItems, removeFromCart } = useCart();
-  const { user } = useAuth();
+  const { cartItems, removeFromCart, clearCart } = useCart();
+  const { user, updatePurchasedCourses } = useAuth();
   const [billingInfo, setBillingInfo] = useState({
     cardNumber: '',
     cardName: '',
@@ -51,6 +51,9 @@ export default function Cart() {
       await courseService.addUserCourses(user.id, courseIds);
 
       // Navigate to the profile view after successful payment
+      await updatePurchasedCourses(user.id);
+      localStorage.setItem('cartItems', JSON.stringify([]));
+      clearCart();
       navigate('/profile');
     } catch (error) {
       console.error('Payment processing failed:', error);

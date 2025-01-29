@@ -1,13 +1,19 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { courseService } from '../services/courseService';
+import { Course } from '../types';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  purchasedCourses: Course[];
+  createdCourses: Course[];
   signUp: (email: string, password: string, userData: { name: string; phone: string; role: string }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updatePurchasedCourses: (userId: string) => Promise<void>;
+  updateCreatedCourses: (userId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,17 +21,39 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [purchasedCourses, setPurchasedCourses] = useState<Course[]>([]);
+  const [createdCourses, setCreatedCourses] = useState<Course[]>([]);
 
   useEffect(() => {
-    // Check active sessions and sets the user
+    const fetchCourses = async (userId: string) => {
+      try {
+        const [created, purchased] = await Promise.all([
+          courseService.getCreatedCourses(userId),
+          courseService.getPurchasedCourses(userId)
+        ]);
+        
+        setCreatedCourses(created);
+        setPurchasedCourses(purchased);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchCourses(currentUser.id);
+      }
       setLoading(false);
     });
 
-    // Listen for changes on auth state
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        fetchCourses(currentUser.id);
+      }
       setLoading(false);
     });
 
@@ -58,8 +86,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const updatePurchasedCourses = async (userId: string) => {
+    const purchased = await courseService.getPurchasedCourses(userId);
+    setPurchasedCourses(purchased);
+  };
+
+  const updateCreatedCourses = async (userId: string) => {
+    const created = await courseService.getCreatedCourses(userId);
+    setCreatedCourses(created);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, purchasedCourses, createdCourses, signUp, signIn, signOut, updatePurchasedCourses, updateCreatedCourses }}>
       {children}
     </AuthContext.Provider>
   );

@@ -11,7 +11,10 @@ interface CourseCardProps {
 
 export default function CourseCard({ course }: CourseCardProps) {
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user, purchasedCourses } = useAuth();
+
+  const hasPurchased = purchasedCourses.some(purchasedCourse => purchasedCourse.id === course.id);
+
   return (
     <Link to={`/course/${course.id}`} className="block">
       <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
@@ -35,10 +38,21 @@ export default function CourseCard({ course }: CourseCardProps) {
             {course.description}
           </p>
           <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-gray-900">${course.price}</span>
-            <span className="text-sm text-gray-600">{course.duration > 0 ? `${course.duration} hours` : ''} </span>
+            <div className="flex items-baseline">
+              <span className="text-lg font-bold text-gray-900">
+                ${course.sale_price || course.price}
+              </span>
+              {course.sale_price && course.sale_price < course.price && (
+                <span className="ml-2 text-sm text-gray-500 line-through">
+                  ${course.price}
+                </span>
+              )}
+            </div>
+            <span className="text-sm text-gray-600">
+              {course.duration > 0 ? `${course.duration} hours` : ''}
+            </span>
           </div>
-          {course.instructor_id !== user?.id && (
+          {course.instructor_id !== user?.id && !hasPurchased && (
             <button
               onClick={(e) => {
                 e.preventDefault();

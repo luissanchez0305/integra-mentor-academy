@@ -21,7 +21,8 @@ export interface Course {
   access_duration: number;
   difficulty: string;
   updated_at: string;
-  course_details: {
+  is_published: boolean;
+  course_details: [{
     what_will_learn: string[];
     requirements: string[];
     includes: {
@@ -34,7 +35,7 @@ export interface Course {
       languages: string[];
       access: string;
     };
-  };
+  }];
   rating: number;
   reviews: number;
   thumbnail: string;

@@ -1,9 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Camera, Save, Search, BookOpen, Clock, Award, AlertCircle } from 'lucide-react';
+import { 
+  User, 
+  Camera, 
+  Save, 
+  Search, 
+  BookOpen, 
+  Clock, 
+  Award, 
+  AlertCircle, 
+  Edit, 
+  Eye, 
+  EyeOff,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { profileService } from '../services/profileService';
+import { courseService } from '../services/courseService';
 import { useNavigate } from 'react-router-dom';
+import { Course } from '../types';
+import CourseCard from '../components/CourseCard';
 
 interface Profile {
   id: string;
@@ -16,25 +31,6 @@ interface Profile {
   state: string | null;
   postal_code: string | null;
   country: string | null;
-}
-
-interface CourseHistory {
-  id: string;
-  title: string;
-  instructor: string;
-  description: string;
-  price: number;
-  rating: number;
-  reviews: number;
-  thumbnail: string;
-  duration: string;
-  lessons: number;
-  category: string;
-  startDate: string;
-  endDate?: string;
-  progress: number;
-  status: 'completed' | 'in-progress' | 'not-started';
-  grade?: number;
 }
 
 const countryAreaCodes = [
@@ -50,7 +46,7 @@ const countryAreaCodes = [
 ];
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, purchasedCourses, createdCourses } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +57,7 @@ export default function Profile() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [courses, setCourses] = useState<CourseHistory[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -72,13 +66,15 @@ export default function Profile() {
     }
 
     async function loadProfile() {
-      if (user) {
+      const userLoggedIn = await courseService.getLoggedInUser();
+      console.log('User:', userLoggedIn);
+      console.log('Loading profile');
+      if (userLoggedIn) {
         try {
-          setLoading(true);
           const { data, error: profileError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', user.id)
+            .eq('id', userLoggedIn.id)
             .single();
 
           if (profileError) throw profileError;
@@ -91,11 +87,15 @@ export default function Profile() {
         } finally {
           setLoading(false);
         }
+      } else {
+        console.error('User not found');
+        navigate('/login');
+        return;
       }
     }
 
     loadProfile();
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (!formData) return;
@@ -157,6 +157,29 @@ export default function Profile() {
       setMessage({ type: 'error', text: 'Failed to update profile picture' });
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const handleTogglePublish = async (courseId: string, currentStatus: boolean) => {
+    try {
+      await courseService.toggleCoursePublishStatus(courseId, !currentStatus);
+      setCreatedCourses(prev =>
+        prev.map(course =>
+          course.id === courseId
+            ? { ...course, is_published: !currentStatus }
+            : course
+        )
+      );
+      setMessage({
+        type: 'success',
+        text: `Course ${!currentStatus ? 'published' : 'unpublished'} successfully!`
+      });
+    } catch (err) {
+      console.error('Error toggling course publish status:', err);
+      setMessage({
+        type: 'error',
+        text: 'Failed to update course status'
+      });
     }
   };
 
@@ -222,7 +245,40 @@ export default function Profile() {
           </div>
 
           {/* Tabs */}
-          {/* ... (tabs section remains the same) */}
+          <div className="border-b border-gray-200">
+            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+              <button
+                onClick={() => setActiveTab('personal')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'personal'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Personal Information
+              </button>
+              <button
+                onClick={() => setActiveTab('created')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'created'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Created Courses
+              </button>
+              <button
+                onClick={() => setActiveTab('enrolled')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'enrolled'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                My Learning
+              </button>
+            </nav>
+          </div>
 
           {/* Tab Content */}
           <div className="p-6">
@@ -275,7 +331,7 @@ export default function Profile() {
                           onChange={(e) => {
                             const number = formData.phone?.split(' ')[1] || '';
                             setFormData(prev => ({
-                              ...prev,
+                              ...prev!,
                               phone: `${e.target.value} ${number}`
                             }));
                           }}
@@ -293,7 +349,7 @@ export default function Profile() {
                           onChange={(e) => {
                             const code = formData.phone?.split(' ')[0] || '+507';
                             setFormData(prev => ({
-                              ...prev,
+                              ...prev!,
                               phone: `${code} ${e.target.value}`
                             }));
                           }}
@@ -403,8 +459,83 @@ export default function Profile() {
               </form>
             )}
 
-            {/* Course History Tab Content */}
-            {/* ... (course history section remains the same) */}
+            {activeTab === 'created' && (
+              <div>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Created Courses</h2>
+                  <button
+                    onClick={() => navigate('/create-course')}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  >
+                    Create New Course
+                  </button>
+                </div>
+                {loadingCourses ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : createdCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {createdCourses.map((course) => (
+                      <div key={course.id} className="relative">
+                        <CourseCard course={course} />
+                        <div className="absolute top-4 right-4 flex space-x-2">
+                          <button
+                            onClick={() => navigate(`/create-course/${course.id}`)}
+                            className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                            title="Edit course"
+                          >
+                            <Edit className="h-4 w-4 text-gray-600" />
+                          </button>
+                          <button
+                            onClick={() => handleTogglePublish(course.id, course.is_published)}
+                            className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                            title={course.is_published ? 'Unpublish course' : 'Publish course'}
+                          >
+                            {course.is_published ? (
+                              <EyeOff className="h-4 w-4 text-gray-600" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-600" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">You haven't created any courses yet.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'enrolled' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">My Learning</h2>
+                {loadingCourses ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : purchasedCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {purchasedCourses.map((course) => (
+                      <CourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">You haven't enrolled in any courses yet.</p>
+                    <button
+                      onClick={() => navigate('/')}
+                      className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      Browse Courses
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

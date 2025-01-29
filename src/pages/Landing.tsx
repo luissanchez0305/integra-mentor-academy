@@ -1,22 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CourseCarousel from '../components/CourseCarousel';
-
-const featuredCourses = [
-  {
-    id: '1',
-    title: 'Complete Web Development Bootcamp',
-    instructor: 'John Doe',
-    description: 'Learn web development from scratch',
-    price: 99.99,
-    rating: 4.8,
-    reviews: 1234,
-    thumbnail: 'https://images.unsplash.com/photo-1587620962725-abab7fe55159',
-    duration: '32 hours',
-    lessons: 280,
-    category: 'Web Development'
-  },
-  // Add more courses...
-];
+import { courseService } from '../services/courseService';
+import { Course } from '../types';
 
 const testimonials = [
   {
@@ -30,6 +15,21 @@ const testimonials = [
 ];
 
 export default function Landing() {
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    async function fetchFeaturedCourses() {
+      try {
+        const courses = await courseService.getFeaturedCourses();
+        setFeaturedCourses(courses);
+      } catch (error) {
+        console.error('Error fetching featured courses:', error);
+      }
+    }
+
+    fetchFeaturedCourses();
+  }, []);
+
   return (
     <div className="pt-16">
       {/* Hero Section */}

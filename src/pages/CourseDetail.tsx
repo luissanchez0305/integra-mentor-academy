@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Star, Users, Calendar, Play, Download, FileText, Monitor, Award, ChevronRight, Clock, Globe } from 'lucide-react';
 import { courseService } from '../services/courseService';
 import { Course } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CourseDetail() {
+  const { user, purchasedCourses } = useAuth();
   const navigate = useNavigate();
   const { id: courseId } = useParams<{ id: string }>();
   const [courseData, setCourseData] = useState<Course | null>(null);
@@ -117,7 +119,7 @@ export default function CourseDetail() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-6">Lo que aprenderás</h2>
               <div className="grid md:grid-cols-2 gap-4">
-                {courseData.course_details.what_will_learn ? courseData.course_details.what_will_learn.map((objective, index) => (
+                {courseData.course_details[0].what_will_learn ? courseData.course_details[0].what_will_learn.map((objective, index) => (
                   <div key={index} className="flex items-start">
                     <ChevronRight className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-600">{objective}</span>
@@ -133,7 +135,7 @@ export default function CourseDetail() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-6">Requisitos</h2>
               <ul className="space-y-3">
-                {courseData.course_details.requirements ? courseData.course_details.requirements.map((prerequisite, index) => (
+                {courseData.course_details[0].requirements ? courseData.course_details[0].requirements.map((prerequisite, index) => (
                   <li key={index} className="flex items-start">
                     <ChevronRight className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-600">{prerequisite}</span>
@@ -162,32 +164,33 @@ export default function CourseDetail() {
                     )}
                   </div>
                 </div>
-
-                <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors mb-4">
-                  Comprar ahora
-                </button>
+                {courseData.instructor_id !== user?.id && !purchasedCourses.some(course => course.id === courseId) && (
+                  <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors mb-4">
+                    Comprar ahora
+                  </button>
+                )}
 
                 <div className="space-y-4">
                   <h3 className="text-lg font-bold mb-4">Este curso incluye:</h3>
                   <div className="flex items-center">
                     <Play className="h-5 w-5 text-gray-400 mr-3" />
-                    <span>{courseData.course_details.includes.video_hours} horas de video bajo demanda</span>
+                    <span>{courseData.course_details[0].includes.video_hours} horas de video bajo demanda</span>
                   </div>
                   <div className="flex items-center">
                     <Download className="h-5 w-5 text-gray-400 mr-3" />
-                    <span>{courseData.course_details.includes.downloadable_resources} recursos descargables</span>
+                    <span>{courseData.course_details[0].includes.downloadable_resources} recursos descargables</span>
                   </div>
                   <div className="flex items-center">
                     <FileText className="h-5 w-5 text-gray-400 mr-3" />
-                    <span>{courseData.course_details.includes.articles} artículos</span>
+                    <span>{courseData.course_details[0].includes.articles} artículos</span>
                   </div>
                   <div className="flex items-center">
                     <Clock className="h-5 w-5 text-gray-400 mr-3" />
-                    <span>{courseData.course_details.includes.access} acceso</span>
+                    <span>{courseData.course_details[0].includes.access} acceso</span>
                   </div>
                   <div className="flex items-center">
                     <Monitor className="h-5 w-5 text-gray-400 mr-3" />
-                    <span>Acceso en {courseData.course_details.includes.devices ? courseData.course_details.includes.devices.join(', ') : 'Escritorio'}</span>
+                    <span>Acceso en {courseData.course_details[0].includes.devices ? courseData.course_details[0].includes.devices.join(', ') : 'Escritorio'}</span>
                   </div>
                   <div className="flex items-center">
                     <Award className="h-5 w-5 text-gray-400 mr-3" />
