@@ -129,7 +129,7 @@ export default function Profile() {
 
       setProfile(formData);
       setIsEditing(false);
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setMessage({ type: 'success', text: 'Perfil actualizado exitosamente!' });
     } catch (err) {
       console.error('Error updating profile:', err);
       setMessage({ type: 'error', text: 'Failed to update profile' });
@@ -151,7 +151,7 @@ export default function Profile() {
       const publicUrl = await profileService.uploadAvatar(file, user.id);
       setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
       setFormData(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
-      setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
+      setMessage({ type: 'success', text: 'Perfil actualizado exitosamente!' });
     } catch (error) {
       console.error('Error uploading avatar:', error);
       setMessage({ type: 'error', text: 'Failed to update profile picture' });
@@ -172,7 +172,7 @@ export default function Profile() {
       );
       setMessage({
         type: 'success',
-        text: `Course ${!currentStatus ? 'published' : 'unpublished'} successfully!`
+        text: `Curso ${!currentStatus ? 'publicado' : 'despublicado'} exitosamente!`
       });
     } catch (err) {
       console.error('Error toggling course publish status:', err);
@@ -196,8 +196,8 @@ export default function Profile() {
       <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Profile</h2>
-          <p className="text-gray-600">{error || 'Profile not found'}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error al cargar el perfil</h2>
+          <p className="text-gray-600">{error || 'Perfil no encontrado'}</p>
         </div>
       </div>
     );
@@ -255,7 +255,7 @@ export default function Profile() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Personal Information
+                Información Personal
               </button>
               <button
                 onClick={() => setActiveTab('created')}
@@ -265,7 +265,7 @@ export default function Profile() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Created Courses
+                Cursos Creados
               </button>
               <button
                 onClick={() => setActiveTab('enrolled')}
@@ -275,7 +275,7 @@ export default function Profile() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                My Learning
+                Mi Aprendizaje
               </button>
             </nav>
           </div>
@@ -296,10 +296,10 @@ export default function Profile() {
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Personal Information */}
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Información Personal</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                      <label className="block text-sm font-medium text-gray-700">Nombre Completo</label>
                       <input
                         type="text"
                         name="name"
@@ -321,7 +321,7 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Phone</label>
+                      <label className="block text-sm font-medium text-gray-700">Teléfono</label>
                       <div className="mt-1 flex">
                         <select
                           name="phone_code"
@@ -355,7 +355,7 @@ export default function Profile() {
                           }}
                           disabled={!isEditing}
                           className="flex-1 rounded-r-md border-l-0 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                          placeholder="Phone number"
+                          placeholder="Número de teléfono"
                         />
                       </div>
                     </div>
@@ -364,10 +364,10 @@ export default function Profile() {
 
                 {/* Address Information */}
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Address Information</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Información de Dirección</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700">Street Address</label>
+                      <label className="block text-sm font-medium text-gray-700">Dirección</label>
                       <input
                         type="text"
                         name="street_address"
@@ -378,7 +378,7 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">City</label>
+                      <label className="block text-sm font-medium text-gray-700">Ciudad</label>
                       <input
                         type="text"
                         name="city"
@@ -389,7 +389,7 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">State/Province</label>
+                      <label className="block text-sm font-medium text-gray-700">Estado/Provincia</label>
                       <input
                         type="text"
                         name="state"
@@ -400,7 +400,7 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Postal Code</label>
+                      <label className="block text-sm font-medium text-gray-700">Código Postal</label>
                       <input
                         type="text"
                         name="postal_code"
@@ -411,7 +411,7 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Country</label>
+                      <label className="block text-sm font-medium text-gray-700">País</label>
                       <input
                         type="text"
                         name="country"
@@ -432,7 +432,7 @@ export default function Profile() {
                       onClick={() => setIsEditing(true)}
                       className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      Edit Profile
+                      Editar Perfil
                     </button>
                   ) : (
                     <>
@@ -444,14 +444,14 @@ export default function Profile() {
                         }}
                         className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        Cancel
+                        Cancelar
                       </button>
                       <button
                         type="submit"
                         className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <Save className="h-4 w-4 mr-2" />
-                        Save Changes
+                        Guardar Cambios
                       </button>
                     </>
                   )}
@@ -462,12 +462,12 @@ export default function Profile() {
             {activeTab === 'created' && (
               <div>
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Created Courses</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">Cursos Creados</h2>
                   <button
                     onClick={() => navigate('/create-course')}
                     className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
-                    Create New Course
+                    Crear Nuevo Curso
                   </button>
                 </div>
                 {loadingCourses ? (
@@ -483,14 +483,14 @@ export default function Profile() {
                           <button
                             onClick={() => navigate(`/create-course/${course.id}`)}
                             className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-                            title="Edit course"
+                            title="Editar curso"
                           >
                             <Edit className="h-4 w-4 text-gray-600" />
                           </button>
                           <button
                             onClick={() => handleTogglePublish(course.id, course.is_published)}
                             className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
-                            title={course.is_published ? 'Unpublish course' : 'Publish course'}
+                            title={course.is_published ? 'Retirar curso' : 'Publicar curso'}
                           >
                             {course.is_published ? (
                               <EyeOff className="h-4 w-4 text-gray-600" />
@@ -504,7 +504,7 @@ export default function Profile() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-600">You haven't created any courses yet.</p>
+                    <p className="text-gray-600">Aún no has creado ningún curso.</p>
                   </div>
                 )}
               </div>
@@ -512,7 +512,7 @@ export default function Profile() {
 
             {activeTab === 'enrolled' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">My Learning</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Mi Aprendizaje</h2>
                 {loadingCourses ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -520,17 +520,17 @@ export default function Profile() {
                 ) : purchasedCourses.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {purchasedCourses.map((course) => (
-                      <CourseCard key={course.id} course={course} />
+                      <CourseCard key={course.id} isLearn={true} course={course} />
                     ))}
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-gray-600">You haven't enrolled in any courses yet.</p>
+                    <p className="text-gray-600">Aún no te has inscrito en ningún curso.</p>
                     <button
                       onClick={() => navigate('/')}
                       className="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                     >
-                      Browse Courses
+                      Explorar Cursos
                     </button>
                   </div>
                 )}

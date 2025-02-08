@@ -7,16 +7,22 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface CourseCardProps {
   course: Course;
+  isLearn?: boolean;
 }
 
-export default function CourseCard({ course }: CourseCardProps) {
+export default function CourseCard({ course, isLearn = false }: CourseCardProps) {
   const { addToCart } = useCart();
   const { user, purchasedCourses } = useAuth();
+
+  const courseTransformed = {
+    ...course,
+    instructor: course.profiles,
+  }
 
   const hasPurchased = purchasedCourses.some(purchasedCourse => purchasedCourse.id === course.id);
 
   return (
-    <Link to={`/course/${course.id}`} className="block">
+    <Link to={`/course/${course.id}${isLearn ? '/learn': ''}`} className="block">
       <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:scale-105">
         <img
           src={course.thumbnail}
@@ -25,7 +31,7 @@ export default function CourseCard({ course }: CourseCardProps) {
         />
         <div className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{course.title}</h3>
-          <p className="text-sm text-gray-600 mb-2">{course.instructor}</p>
+          <p className="text-sm text-gray-600 mb-2">{courseTransformed.profiles.name}</p>
           <div className="flex items-center mb-2">
             <div className="flex items-center">
               <Star className="h-4 w-4 text-yellow-400 fill-current" />

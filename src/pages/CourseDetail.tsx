@@ -19,7 +19,7 @@ export default function CourseDetail() {
       }
       try {
         const course = await courseService.getCourseById(courseId);
-        console.log('course', course);
+        
         setCourseData(course);
       } catch (error) {
         console.error('Error fetching course data:', error);
@@ -65,7 +65,7 @@ export default function CourseDetail() {
                 </div>
               </div>
               <p className="text-gray-300 mb-4">
-                Creado por <span className="text-blue-400">{courseData.instructor}</span>
+                Creado por <span className="text-blue-400">{courseData.instructor.name}</span>
               </p>
               <div className="flex items-center text-sm">
                 <Calendar className="h-4 w-4 mr-2" />

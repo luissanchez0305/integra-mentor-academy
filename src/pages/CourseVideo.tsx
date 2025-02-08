@@ -1,89 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, CheckCircle, MessageCircle, Book, PenTool, FileText, User, Star, Clock } from 'lucide-react';
-
-// Mock data - Replace with actual data from your API
-const courseData = {
-  id: '1',
-  title: 'Complete Web Development Bootcamp',
-  currentVideo: {
-    title: 'Introduction to HTML',
-    url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-    duration: '15:30',
-    completed: false
-  },
-  instructor: {
-    name: 'John Doe',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
-    title: 'Senior Web Developer',
-    description: 'Full-stack developer with 10+ years of experience in web development and teaching.',
-    courses: 12,
-    students: 50000,
-    rating: 4.8
-  },
-  modules: [
-    {
-      title: 'Getting Started',
-      lessons: [
-        { id: '1', title: 'Course Overview', duration: '5:30', completed: true },
-        { id: '2', title: 'Setting Up Your Development Environment', duration: '10:15', completed: true },
-        { id: '3', title: 'Introduction to HTML', duration: '15:30', completed: false, current: true },
-      ]
-    },
-    {
-      title: 'HTML Fundamentals',
-      lessons: [
-        { id: '4', title: 'HTML Document Structure', duration: '12:45', completed: false },
-        { id: '5', title: 'Working with Text Elements', duration: '18:20', completed: false },
-        { id: '6', title: 'Links and Images', duration: '20:10', completed: false },
-      ]
-    }
-  ],
-  questions: [
-    {
-      id: '1',
-      user: 'Alice Smith',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
-      question: 'How do I properly structure nested elements?',
-      answer: 'When nesting elements, make sure to maintain proper indentation and closing tags...',
-      timestamp: '2 days ago',
-      likes: 5
-    },
-    {
-      id: '2',
-      user: 'Bob Johnson',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-      question: 'What\'s the difference between inline and block elements?',
-      answer: 'Block elements take up the full width available and create new lines...',
-      timestamp: '1 week ago',
-      likes: 8
-    }
-  ],
-  resources: [
-    { id: '1', title: 'Course Slides', type: 'PDF', size: '2.5 MB' },
-    { id: '2', title: 'Source Code', type: 'ZIP', size: '1.8 MB' },
-    { id: '3', title: 'Exercise Files', type: 'ZIP', size: '3.2 MB' }
-  ]
-};
+import { courseService } from '../services/courseService';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Course } from '../types';
+import { userCourseService } from '../services/userCourseService';
 
 export default function CourseVideo() {
   const [activeTab, setActiveTab] = useState('description');
+  const navigate = useNavigate();
+  const [courseData, setCourseData] = useState<Course | null>(null);
+  const [currentVideo, setCurrentVideo] = useState<{ url: string; title: string, section_title: string } | null>(null);
+  const [instructorCoursesCount, setInstructorCoursesCount] = useState(0);
+  const [userCoursesCount, setUserCoursesCount] = useState(0);
+  const { id: courseId } = useParams<{ id: string }>();
+  const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchCourseData() {
+      if (!courseId) {
+        navigate('/');
+        return;
+      }
+      try {
+        const data = await courseService.getCourseById(courseId);
+        console.log('data', data);
+        setCourseData(data);
+        // Set default video to the first lesson
+        if (data.course_sections.length > 0 && data.course_sections[0].course_lessons.length > 0) {
+          setCurrentVideo({
+            url: data.course_sections[0].course_lessons[0].video_url,
+            title: data.course_sections[0].course_lessons[0].title,
+            section_title: data.course_sections[0].title,
+          });
+          setSelectedLessonId(data.course_sections[0].course_lessons[0].id);
+        }
+
+        courseService.getCoursesByInstructor(data.instructor.id)
+          .then(async (instructorCourses) => {
+            setInstructorCoursesCount(instructorCourses.length);
+            const userCourses = await userCourseService.getUserCoursesByCoursesArray(instructorCourses)
+            setUserCoursesCount(userCourses.length);
+          })
+      } catch (error) {
+        console.error('Error fetching course data:', error);
+      }
+    }
+
+    fetchCourseData();
+  }, []);
+
+  if (!courseData || !currentVideo) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen pt-16 bg-gray-50">
       <div className="flex h-[calc(100vh-4rem)]">
         {/* Left side - Video Player */}
         <div className="flex-1 bg-black">
-          <div className="h-full flex flex-col">
+          <div className="flex flex-col h-full">
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
               <iframe
-                src={courseData.currentVideo.url}
-                title={courseData.currentVideo.title}
+                src={`https://www.youtube.com/embed/${extractYouTubeVideoId(currentVideo.url)}`}
+                title={`${currentVideo.section_title} - ${currentVideo.title}`}
                 className="absolute top-0 left-0 w-full h-full"
                 allowFullScreen
               />
             </div>
-            <div className="p-6 bg-white flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">{courseData.currentVideo.title}</h1>
+            <div className="p-6 bg-white flex-1 overflow-y-auto">
+              {/* Stylish Course Title */}
+              <h1 className="text-3xl font-extrabold text-blue-600 mb-4">{courseData.title}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">{`${currentVideo.section_title} - ${currentVideo.title}`}</h1>
               
               {/* Tabs */}
               <div className="border-b border-gray-200">
@@ -96,7 +83,7 @@ export default function CourseVideo() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Description
+                    Descripción
                   </button>
                   <button
                     onClick={() => setActiveTab('qa')}
@@ -106,7 +93,7 @@ export default function CourseVideo() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Q&A
+                    Preguntas y Respuestas
                   </button>
                   <button
                     onClick={() => setActiveTab('notes')}
@@ -116,9 +103,9 @@ export default function CourseVideo() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Notes
+                    Notas
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => setActiveTab('resources')}
                     className={`pb-4 px-1 border-b-2 font-medium text-sm ${
                       activeTab === 'resources'
@@ -126,32 +113,32 @@ export default function CourseVideo() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Resources
-                  </button>
+                    Recursos
+                  </button> */}
                 </nav>
               </div>
 
               {/* Tab Content */}
-              <div className="mt-6">
+              <div className="mt-6 flex-1 overflow-y-auto">
                 {activeTab === 'description' && (
                   <div>
-                    <div className="flex items-start space-x-4 mb-6">
+                    <p className="text-gray-600 mb-6">{courseData.description}</p>
+                    <div className="flex items-start space-x-4">
                       <img
-                        src={courseData.instructor.avatar}
+                        src={courseData.instructor.avatar_url}
                         alt={courseData.instructor.name}
                         className="w-12 h-12 rounded-full"
                       />
                       <div>
                         <h3 className="font-medium text-gray-900">{courseData.instructor.name}</h3>
-                        <p className="text-gray-500">{courseData.instructor.title}</p>
                         <div className="flex items-center mt-2 text-sm text-gray-500">
                           <div className="flex items-center mr-4">
                             <Book className="h-4 w-4 mr-1" />
-                            {courseData.instructor.courses} courses
+                            {instructorCoursesCount} {`curso${instructorCoursesCount > 1 || instructorCoursesCount === 0? 's' : ''}`}
                           </div>
                           <div className="flex items-center mr-4">
                             <User className="h-4 w-4 mr-1" />
-                            {courseData.instructor.students.toLocaleString()} students
+                            {userCoursesCount} {`estudiante${userCoursesCount > 1 || userCoursesCount === 0? 's' : ''}`}
                           </div>
                           <div className="flex items-center">
                             <Star className="h-4 w-4 mr-1 text-yellow-400" />
@@ -160,56 +147,78 @@ export default function CourseVideo() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-gray-600">{courseData.instructor.description}</p>
                   </div>
                 )}
 
                 {activeTab === 'qa' && (
                   <div className="space-y-6">
-                    {courseData.questions.map((question) => (
-                      <div key={question.id} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-start space-x-3">
-                          <img
-                            src={question.avatar}
-                            alt={question.user}
-                            className="w-10 h-10 rounded-full"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium text-gray-900">{question.user}</h4>
-                              <span className="text-sm text-gray-500">{question.timestamp}</span>
-                            </div>
-                            <p className="mt-1 text-gray-600">{question.question}</p>
-                            {question.answer && (
-                              <div className="mt-3 pl-4 border-l-2 border-gray-200">
-                                <p className="text-gray-600">{question.answer}</p>
+                    {courseData.questions && courseData.questions.length > 0 ? (
+                      courseData.questions.map((question) => (
+                        <div key={question.id} className="bg-gray-50 rounded-lg p-4">
+                          <div className="flex items-start space-x-3">
+                            <img
+                              src={question.user.avatar_url}
+                              alt={question.user.name}
+                              className="w-10 h-10 rounded-full"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-gray-900">{question.profiles.name}</h4>
+                                <span className="text-sm text-gray-500">{question.created_at}</span>
                               </div>
-                            )}
-                            <div className="mt-2 flex items-center space-x-4">
-                              <button className="text-sm text-gray-500 hover:text-gray-700">
-                                Like ({question.likes})
-                              </button>
-                              <button className="text-sm text-gray-500 hover:text-gray-700">
-                                Reply
-                              </button>
+                              <p className="mt-1 text-gray-600">{question.question_text}</p>
+                              {question.answer_text && (
+                                <div className="mt-3 pl-4 border-l-2 border-gray-200">
+                                  <p className="text-gray-600">{question.answer_text}</p>
+                                </div>
+                              )}
+                              <div className="mt-2 flex items-center space-x-4">
+                                <button className="text-sm text-gray-500 hover:text-gray-700">
+                                  Me gusta ({question.likes})
+                                </button>
+                                <button className="text-sm text-gray-500 hover:text-gray-700">
+                                  Responder
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-gray-600">No hay preguntas hechas para este curso todavía.</p>
+                    )}
                   </div>
                 )}
 
                 {activeTab === 'notes' && (
-                  <div>
-                    <textarea
-                      placeholder="Take notes for this lesson..."
-                      className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                      <PenTool className="h-4 w-4 mr-2" />
-                      Save Notes
-                    </button>
+                  <div className="flex space-x-4">
+                    {/* Left Column - Notes Form */}
+                    <div className="flex-1">
+                      <textarea
+                        placeholder="Toma notas para esta lección..."
+                        className="w-full h-48 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        <PenTool className="h-4 w-4 mr-2" />
+                        Guardar Notas
+                      </button>
+                    </div>
+                    
+                    {/* Right Column - List of Notes */}
+                    <div className="flex-1 bg-gray-50 p-4 rounded-lg">
+                      <h3 className="font-medium text-gray-900 mb-2">Notas del Curso</h3>
+                      <ul className="space-y-2">
+                        {courseData.notes && courseData.notes.length > 0 ? (
+                          courseData.notes.map((note, index) => (
+                            <li key={index} className="p-2 bg-white rounded-lg shadow-sm">
+                              <p className="text-gray-600">{note.text}</p>
+                            </li>
+                          ))
+                        ) : (
+                          <p className="text-gray-600">No hay notas disponibles para este curso.</p>
+                        )}
+                      </ul>
+                    </div>
                   </div>
                 )}
 
@@ -228,7 +237,7 @@ export default function CourseVideo() {
                           </div>
                         </div>
                         <button className="text-blue-600 hover:text-blue-700 font-medium">
-                          Download
+                          Descargar
                         </button>
                       </div>
                     ))}
@@ -242,17 +251,23 @@ export default function CourseVideo() {
         {/* Right side - Course Content */}
         <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
           <div className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Course Content</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Contenido del Curso</h2>
             <div className="space-y-4">
-              {courseData.modules.map((module, moduleIndex) => (
-                <div key={moduleIndex}>
-                  <h3 className="font-medium text-gray-900 mb-2">{module.title}</h3>
+              {courseData.course_sections.map((section, sectionIndex) => (
+                <div key={sectionIndex}>
+                  <h3 className="font-medium text-gray-900 mb-2">{section.title}</h3>
                   <div className="space-y-1">
-                    {module.lessons.map((lesson) => (
+                    {section.course_lessons.map((lesson) => (
                       <button
                         key={lesson.id}
+                        onClick={() => {
+                          setCurrentVideo({ url: lesson.video_url, title: lesson.title, section_title: section.title });
+                          setSelectedLessonId(lesson.id);
+                        }}
                         className={`w-full flex items-center p-2 rounded-lg text-left ${
-                          lesson.current
+                          selectedLessonId === lesson.id
+                            ? 'bg-blue-100 text-blue-700'
+                            : lesson.current
                             ? 'bg-blue-50 text-blue-600'
                             : 'hover:bg-gray-50 text-gray-700'
                         }`}
@@ -277,4 +292,10 @@ export default function CourseVideo() {
       </div>
     </div>
   );
+}
+
+function extractYouTubeVideoId(url: string): string {
+  const regex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^&]+)|youtu\.be\/([^&]+)/;
+  const match = url.match(regex);
+  return match ? match[1] || match[2] : '';
 }

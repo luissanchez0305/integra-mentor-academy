@@ -4,13 +4,15 @@ export interface User {
   email: string;
   phone: string;
   role: 'student' | 'instructor';
-  avatar?: string;
+  avatar_url: string,
+  courses: [],
+  students: number,
 }
 
 export interface Course {
   id: string;
   title: string;
-  instructor: string;
+  instructor: User;
   instructor_id: string;
   description: string;
   price: number;
@@ -22,6 +24,17 @@ export interface Course {
   difficulty: string;
   updated_at: string;
   is_published: boolean;
+  questions: [{
+    user: User,
+    question_text: string,
+    answer_text: string,
+    created_at: string,
+  }],
+  notes: [{
+    note_text: string,
+    video_time: string,
+    created_at: string,
+  }],
   course_details: [{
     what_will_learn: string[];
     requirements: string[];

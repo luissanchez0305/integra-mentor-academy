@@ -227,7 +227,7 @@ export const courseService = {
 
   async getCourseFullDetails(courseId: string) {
     // Get course basic info and details
-    const { data: course, error: courseError } = await supabase
+    const { data, error } = await supabase
       .from('courses')
       .select(`
         *,
@@ -250,25 +250,28 @@ export const courseService = {
             duration,
             position
           )
+        ),
+        profiles (
+          name
         )
       `)
       .eq('id', courseId)
       .single();
 
-    if (courseError) throw courseError;
+    if (error) throw error;
 
     // Transform the data to match the expected format
-    return {
-      ...course,
-      introVideoUrl: course.intro_video_url,
-      hasCertificate: course.has_certificate,
-      isLifetimeAccess: course.is_lifetime_access,
-      accessDuration: course.access_duration,
-      whatWillLearn: course.course_details[0].what_will_learn,
-      requirements: course.course_details[0].requirements,
-      includes: course.course_details[0].includes,
-      images: course.course_images.map(img => img.image_url),
-      sections: course.course_sections
+    const transformedData = {
+      ...data,
+      introVideoUrl: data.intro_video_url,
+      hasCertificate: data.has_certificate,
+      isLifetimeAccess: data.is_lifetime_access,
+      accessDuration: data.access_duration,
+      whatWillLearn: data.course_details[0].what_will_learn,
+      requirements: data.course_details[0].requirements,
+      includes: data.course_details[0].includes,
+      images: data.course_images.map(img => img.image_url),
+      sections: data.course_sections
         .sort((a, b) => a.position - b.position)
         .map(section => ({
           title: section.title,
@@ -279,8 +282,11 @@ export const courseService = {
               videoUrl: lesson.video_url,
               duration: lesson.duration
             }))
-        }))
+        })),
+      instructor: data.profiles.name,
     };
+
+    return transformedData;
   },
 
   async getCreatedCourses(userId: string) {
@@ -313,6 +319,9 @@ export const courseService = {
         course_id,
         courses (
           *,
+          profiles(
+            name
+          ),
           course_images (
             image_url
           ),
@@ -377,14 +386,55 @@ export const courseService = {
               duration,
               position
             )
+          ),
+          profiles (
+            id,
+            name,
+            avatar_url
+          ),
+          course_questions (
+            profiles(
+              name,
+              avatar_url
+            ),
+            question_text,
+            answer_text,
+            created_at
+          ),
+          course_notes (
+            video_time,
+            note_text
           )`)
-      .eq('id', courseId);
+      .eq('id', courseId)
+      .single();
 
     if (error) throw error;
 
+    // Transform the data to use 'instructor' instead of 'profiles'
+    const transformedData = {
+      ...data,
+      instructor: data.profiles,
+      questions: data.course_questions.map(question => ({
+        ...question,
+        user: question.profiles,
+      })),
+      notes: data.course_notes
+    };
 
-    return data[0];
+    return transformedData;
   },
+
+  async getCoursesByInstructor(instructorId: number) {
+    const { data, error } = await supabase
+      .from('courses')
+      .select(`id, title`)
+      .eq('instructor_id', instructorId)
+
+    if (error) throw error;
+
+    return data;
+  },
+
   async getCoursesByTitle(title: string) {
     const { data, error } = await supabase
       .from('courses')
