@@ -9,6 +9,9 @@
 */
 
 -- Add policy to allow reading instructor profiles when viewing courses
+-- Use DROP POLICY IF EXISTS to handle the case where the policy already exists
+DROP POLICY IF EXISTS "Users can read instructor profiles" ON profiles;
+
 CREATE POLICY "Users can read instructor profiles"
   ON profiles
   FOR SELECT

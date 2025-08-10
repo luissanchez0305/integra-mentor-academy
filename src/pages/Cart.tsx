@@ -21,10 +21,49 @@ export default function Cart() {
   });
   const navigate = useNavigate();
 
+  const formatCardNumber = (value: string) => {
+    // Remove all non-digits
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    // Add spaces every 4 digits
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return v;
+    }
+  };
+
+  const formatExpiryDate = (value: string) => {
+    // Remove all non-digits
+    const v = value.replace(/\D/g, '');
+    // Add slash after 2 digits
+    if (v.length >= 2) {
+      return v.substring(0, 2) + '/' + v.substring(2, 4);
+    }
+    return v;
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    let formattedValue = value;
+
+    if (name === 'cardNumber') {
+      formattedValue = formatCardNumber(value);
+    } else if (name === 'expiryDate') {
+      formattedValue = formatExpiryDate(value);
+    } else if (name === 'cvv') {
+      // Only allow digits for CVV and limit to 4 characters
+      formattedValue = value.replace(/\D/g, '').substring(0, 4);
+    }
+
     setBillingInfo({
       ...billingInfo,
-      [e.target.name]: e.target.value
+      [name]: formattedValue
     });
   };
 
@@ -69,7 +108,7 @@ export default function Cart() {
       <div className="min-h-screen pt-24 pb-12 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">No se ha seleccionado ningun curso</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">No se ha seleccionado ningún curso</h2>
             <p className="text-gray-600 mb-8">Parece que aún no has agregado ningún curso.</p>
             <Link
               to="/"
@@ -86,7 +125,7 @@ export default function Cart() {
   return (
     <div className="min-h-screen pt-24 pb-12 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Carrito de Compras</h1>
 
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
           {/* Cart Items */}
@@ -102,7 +141,7 @@ export default function Cart() {
                     />
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900">{item.course.title}</h3>
-                      <p className="text-sm text-gray-600">by {item.course.instructor}</p>
+                      <p className="text-sm text-gray-600">por {item.course.instructor.name}</p>
                       <div className="mt-2 flex items-center justify-between">
                         <span className="text-lg font-bold text-gray-900">
                           ${item.course.price.toFixed(2)}
@@ -125,14 +164,14 @@ export default function Cart() {
           {/* Payment Information */}
           <div className="lg:col-span-5">
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Resumen del Pedido</h2>
               <div className="space-y-3">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
-                  <span>Tax (10%)</span>
+                  <span>Impuestos (10%)</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-3">
@@ -145,11 +184,11 @@ export default function Cart() {
             </div>
 
             <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment Information</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Información de Pago</h2>
               <div className="space-y-4">
                 <div>
                   <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700">
-                    Card Number
+                    Número de Tarjeta
                   </label>
                   <div className="mt-1 relative">
                     <input
@@ -159,6 +198,7 @@ export default function Cart() {
                       value={billingInfo.cardNumber}
                       onChange={handleInputChange}
                       placeholder="1234 5678 9012 3456"
+                      maxLength={19}
                       className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
@@ -169,7 +209,7 @@ export default function Cart() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="cardName" className="block text-sm font-medium text-gray-700">
-                      Cardholder Name
+                      Nombre del Tarjetahabiente
                     </label>
                     <input
                       type="text"
@@ -183,7 +223,7 @@ export default function Cart() {
                   </div>
                   <div>
                     <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700">
-                      Expiry Date
+                      Fecha de Vencimiento
                     </label>
                     <input
                       type="text"
@@ -191,7 +231,8 @@ export default function Cart() {
                       name="expiryDate"
                       value={billingInfo.expiryDate}
                       onChange={handleInputChange}
-                      placeholder="MM/YY"
+                      placeholder="MM/AA"
+                      maxLength={5}
                       className="mt-1 block w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
@@ -210,6 +251,7 @@ export default function Cart() {
                       value={billingInfo.cvv}
                       onChange={handleInputChange}
                       placeholder="123"
+                      maxLength={4}
                       className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
@@ -217,10 +259,10 @@ export default function Cart() {
                   </div>
                 </div>
 
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-4">Billing Address</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-4">Dirección de Facturación</h3>
                 <div>
                   <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Street Address
+                    Dirección
                   </label>
                   <input
                     type="text"
@@ -236,7 +278,7 @@ export default function Cart() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                      City
+                      Ciudad
                     </label>
                     <input
                       type="text"
@@ -250,7 +292,7 @@ export default function Cart() {
                   </div>
                   <div>
                     <label htmlFor="state" className="block text-sm font-medium text-gray-700">
-                      State
+                      Estado
                     </label>
                     <input
                       type="text"
@@ -267,7 +309,7 @@ export default function Cart() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
-                      ZIP Code
+                      Código Postal
                     </label>
                     <input
                       type="text"
@@ -281,7 +323,7 @@ export default function Cart() {
                   </div>
                   <div>
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-                      Country
+                      País
                     </label>
                     <input
                       type="text"
@@ -300,7 +342,7 @@ export default function Cart() {
                   className="w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
                   <Lock className="h-5 w-5 mr-2" />
-                  Pay ${total.toFixed(2)}
+                  Pagar ${total.toFixed(2)}
                 </button>
               </div>
             </form>

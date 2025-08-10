@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Star, Users, Calendar, Play, Download, FileText, Monitor, Award, ChevronRight, Clock, Globe } from 'lucide-react';
 import { courseService } from '../services/courseService';
 import { Course } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 
 export default function CourseDetail() {
   const { user, purchasedCourses } = useAuth();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
   const { id: courseId } = useParams<{ id: string }>();
   const [courseData, setCourseData] = useState<Course | null>(null);
@@ -27,7 +29,7 @@ export default function CourseDetail() {
     };
 
     fetchCourseData();
-  }, [courseId]);
+  }, [courseId, navigate]);
 
   if (!courseData) {
     return <div>Loading...</div>;
@@ -46,6 +48,18 @@ export default function CourseDetail() {
     ));
   };
 
+  const handleComprarAhora = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (courseData) {
+      addToCart({ course: courseData, quantity: 1 });
+      navigate('/cart');
+    }
+  };
+
   return (
     <div className="min-h-screen pt-16 bg-white">
       {/* Course Header */}
@@ -61,7 +75,7 @@ export default function CourseDetail() {
                 </div>
                 <div className="flex items-center">
                   <Users className="h-5 w-5 mr-2" />
-                  <span>{courseData.totalStudents ?? 0} estudiantes</span>
+                  <span>{courseData.reviews ?? 0} estudiantes</span>
                 </div>
               </div>
               <p className="text-gray-300 mb-4">
@@ -109,7 +123,7 @@ export default function CourseDetail() {
                 <div>
                   <span className="font-medium">Idiomas: </span>
                   <span className="text-gray-600">
-                    {courseData.course_details.includes.languages ? courseData.course_details.includes.languages.join(', ') : 'Español'}
+                    {courseData.course_details[0].includes.languages ? courseData.course_details[0].includes.languages.join(', ') : 'Español'}
                   </span>
                 </div>
               </div>
@@ -165,7 +179,10 @@ export default function CourseDetail() {
                   </div>
                 </div>
                 {courseData.instructor_id !== user?.id && !purchasedCourses.some(course => course.id === courseId) && (
-                  <button className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors mb-4">
+                  <button 
+                    onClick={handleComprarAhora}
+                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors mb-4"
+                  >
                     Comprar ahora
                   </button>
                 )}

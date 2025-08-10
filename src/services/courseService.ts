@@ -541,14 +541,40 @@ export const courseService = {
             )
           )`)
       .ilike('title', `%${title}%`);
-
+    
     if (error) throw error;
 
-    return data.map(course => ({
-      ...course,
-      thumbnail: course.course_images[0]?.image_url || '',
-      duration: course.course_details[0]?.includes?.videoHours || 0,
-    }));
+    // Fetch instructor data with RLS error handling (same as getFeaturedCourses)
+    const instructorIds = [...new Set(data.map(course => course.instructor_id))];
+    let instructorsData = [];
+    
+    try {
+      const { data: instructorsResult, error: instructorsError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', instructorIds);
+      
+      if (instructorsError) {
+        console.warn('Could not fetch instructor data due to RLS:', instructorsError);
+        instructorsData = [];
+      } else {
+        instructorsData = instructorsResult || [];
+      }
+    } catch (error) {
+      console.warn('Failed to fetch instructor data:', error);
+      instructorsData = [];
+    }
+
+    // Map instructor data to courses with fallback for missing instructor info
+    return data.map(course => {
+      const instructor = instructorsData?.find(inst => inst.id === course.instructor_id);
+      return {
+        ...course,
+        thumbnail: course.course_images[0]?.image_url || '',
+        duration: course.course_details[0]?.includes?.videoHours || 0,
+        instructor: instructor || { id: course.instructor_id, name: 'Instructor' }, // Fallback
+      };
+    });
   },
   
   async addUserPayment(userId: string, total: number, tax: number, courseDetails: { price: number, title: string, courseId: string, quantity: number }[]) {
