@@ -16,7 +16,7 @@ export default function CourseCard({ course, isLearn = false }: CourseCardProps)
 
   const courseTransformed = {
     ...course,
-    instructor: course.profiles,
+    instructor: course.instructor,
   }
 
   const hasPurchased = purchasedCourses.some(purchasedCourse => purchasedCourse.id === course.id);
@@ -31,7 +31,7 @@ export default function CourseCard({ course, isLearn = false }: CourseCardProps)
         />
         <div className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{course.title}</h3>
-          <p className="text-sm text-gray-600 mb-2">{courseTransformed.profiles.name}</p>
+          <p className="text-sm text-gray-600 mb-2">{courseTransformed.instructor.name}</p>
           <div className="flex items-center mb-2">
             <div className="flex items-center">
               <Star className="h-4 w-4 text-yellow-400 fill-current" />

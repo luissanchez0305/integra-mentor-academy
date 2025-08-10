@@ -250,15 +250,32 @@ export const courseService = {
             duration,
             position
           )
-        ),
-        profiles (
-          name
         )
       `)
       .eq('id', courseId)
       .single();
 
     if (error) throw error;
+
+    // Fetch instructor data separately with RLS error handling
+    let instructorData = null;
+    try {
+      const { data: instructorResult, error: instructorError } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', data.instructor_id)
+        .single();
+      
+      if (instructorError) {
+        console.warn('Could not fetch instructor data due to RLS:', instructorError);
+        instructorData = { name: 'Instructor' };
+      } else {
+        instructorData = instructorResult;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch instructor data:', error);
+      instructorData = { name: 'Instructor' };
+    }
 
     // Transform the data to match the expected format
     const transformedData = {
@@ -283,7 +300,7 @@ export const courseService = {
               duration: lesson.duration
             }))
         })),
-      instructor: data.profiles.name,
+      instructor: instructorData?.name,
     };
 
     return transformedData;
@@ -319,9 +336,6 @@ export const courseService = {
         course_id,
         courses (
           *,
-          profiles(
-            name
-          ),
           course_images (
             image_url
           ),
@@ -334,11 +348,38 @@ export const courseService = {
 
     if (error) throw error;
 
-    return data.map(({ courses: course }) => ({
-      ...course,
-      thumbnail: course.course_images[0]?.image_url || '',
-      duration: course.course_details[0]?.includes?.videoHours || 0,
-    }));
+    // Fetch instructor data separately for each course with RLS error handling
+    const coursesWithInstructors = await Promise.all(
+      data.map(async ({ courses: course }) => {
+        let instructorData = null;
+        try {
+          const { data: instructorResult, error: instructorError } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', course.instructor_id)
+            .single();
+          
+          if (instructorError) {
+            console.warn('Could not fetch instructor data due to RLS:', instructorError);
+            instructorData = { name: 'Instructor' };
+          } else {
+            instructorData = instructorResult;
+          }
+        } catch (error) {
+          console.warn('Failed to fetch instructor data:', error);
+          instructorData = { name: 'Instructor' };
+        }
+
+        return {
+          ...course,
+          thumbnail: course.course_images[0]?.image_url || '',
+          duration: course.course_details[0]?.includes?.videoHours || 0,
+          instructor: instructorData,
+        };
+      })
+    );
+
+    return coursesWithInstructors;
   },
 
   async toggleCoursePublishStatus(courseId: string, isPublished: boolean) {
@@ -387,16 +428,8 @@ export const courseService = {
               position
             )
           ),
-          profiles (
-            id,
-            name,
-            avatar_url
-          ),
           course_questions (
-            profiles(
-              name,
-              avatar_url
-            ),
+            user_id,
             question_text,
             answer_text,
             created_at
@@ -410,14 +443,62 @@ export const courseService = {
 
     if (error) throw error;
 
-    // Transform the data to use 'instructor' instead of 'profiles'
+    // Fetch instructor data separately with RLS error handling
+    let instructorData = null;
+    try {
+      const { data: instructorResult, error: instructorError } = await supabase
+        .from('profiles')
+        .select('id, name, avatar_url')
+        .eq('id', data.instructor_id)
+        .single();
+      
+      if (instructorError) {
+        console.warn('Could not fetch instructor data due to RLS:', instructorError);
+        instructorData = { id: data.instructor_id, name: 'Instructor', avatar_url: null };
+      } else {
+        instructorData = instructorResult;
+      }
+    } catch (error) {
+      console.warn('Failed to fetch instructor data:', error);
+      instructorData = { id: data.instructor_id, name: 'Instructor', avatar_url: null };
+    }
+
+    console.log('instructorData', instructorData);
+
+    // Fetch user data for questions separately with RLS error handling
+    const questionsWithUsers = await Promise.all(
+      data.course_questions.map(async (question) => {
+        let userData = null;
+        try {
+          const { data: userResult, error: userError } = await supabase
+            .from('profiles')
+            .select('name, avatar_url')
+            .eq('id', question.user_id)
+            .single();
+          
+          if (userError) {
+            console.warn('Could not fetch user data for question due to RLS:', userError);
+            userData = { name: 'User', avatar_url: null };
+          } else {
+            userData = userResult;
+          }
+        } catch (error) {
+          console.warn('Failed to fetch user data for question:', error);
+          userData = { name: 'User', avatar_url: null };
+        }
+
+        return {
+          ...question,
+          user: userData,
+        };
+      })
+    );
+
+    // Transform the data to use 'instructor' instead of 'instructor_id'
     const transformedData = {
       ...data,
-      instructor: data.profiles,
-      questions: data.course_questions.map(question => ({
-        ...question,
-        user: question.profiles,
-      })),
+      instructor: instructorData,
+      questions: questionsWithUsers,
       notes: data.course_notes
     };
 
@@ -512,10 +593,38 @@ export const courseService = {
 
     if (error) throw error;
 
-    return data.map(course => ({
-      ...course,
-      thumbnail: course.course_images[0]?.image_url || '',
-      duration: course.course_details[0]?.includes?.videoHours || 0,
-    }));
+    // Try to fetch instructor data with error handling for RLS
+    const instructorIds = [...new Set(data.map(course => course.instructor_id))];
+    let instructorsData = [];
+    
+    try {
+      const { data: instructorsResult, error: instructorsError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', instructorIds);
+      
+      if (instructorsError) {
+        console.warn('Could not fetch instructor data due to RLS:', instructorsError);
+        instructorsData = [];
+      } else {
+        instructorsData = instructorsResult || [];
+      }
+    } catch (error) {
+      console.warn('Failed to fetch instructor data:', error);
+      instructorsData = [];
+    }
+
+    // Map instructor data to courses with fallback for missing instructor info
+    const coursesWithInstructors = data.map(course => {
+      const instructor = instructorsData?.find(inst => inst.id === course.instructor_id);
+      return {
+        ...course,
+        thumbnail: course.course_images[0]?.image_url || '',
+        duration: course.course_details[0]?.includes?.videoHours || 0,
+        instructor: instructor || { id: course.instructor_id, name: 'Instructor' }, // Fallback
+      };
+    });
+
+    return coursesWithInstructors;
   },
 };

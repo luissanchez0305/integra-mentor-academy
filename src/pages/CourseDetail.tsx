@@ -19,7 +19,7 @@ export default function CourseDetail() {
       }
       try {
         const course = await courseService.getCourseById(courseId);
-        
+        console.log('course', course);
         setCourseData(course);
       } catch (error) {
         console.error('Error fetching course data:', error);
