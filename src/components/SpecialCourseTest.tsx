@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import { specialCourseService } from '../services/specialCourseService';
 import { useAuth } from '../contexts/AuthContext';
-import { SpecialCourse, SpecialCourseTest } from '../types/specialCourse';
+import { SpecialCourse, SpecialCourseTest as SpecialCourseTestType } from '../types/specialCourse';
 
 interface SpecialCourseTestProps {
-  test: SpecialCourseTest;
+  test: SpecialCourseTestType;
   course: SpecialCourse;
   onComplete: () => void;
   onBack: () => void;
