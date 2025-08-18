@@ -5,7 +5,7 @@ import { Howl } from 'howler';
 import { ArrowLeft, ArrowRight, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { specialCourseService } from '../services/specialCourseService';
 import { useAuth } from '../contexts/AuthContext';
-import { SpecialCourse, SpecialCourseSection, SpecialCourseTest, SpecialCourseProgress } from '../types/specialCourse';
+import { SpecialCourse, SpecialCourseSection, SpecialCourseTest as SpecialCourseTestType, SpecialCourseProgress } from '../types/specialCourse';
 import SpecialCourseTest from './SpecialCourseTest';
 import CertificateView from './CertificateView';
 
@@ -16,7 +16,7 @@ export default function SpecialCourseViewer() {
   
   const [course, setCourse] = useState<SpecialCourse | null>(null);
   const [sections, setSections] = useState<SpecialCourseSection[]>([]);
-  const [tests, setTests] = useState<SpecialCourseTest[]>([]);
+  const [tests, setTests] = useState<SpecialCourseTestType[]>([]);
   const [progress, setProgress] = useState<SpecialCourseProgress | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
