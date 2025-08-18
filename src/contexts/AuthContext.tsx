@@ -27,10 +27,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchCourses = async (userId: string) => {
       try {
+        console.log('AuthContext: Fetching courses for user:', userId);
+        
         const [created, purchased] = await Promise.all([
           courseService.getCreatedCourses(userId),
           courseService.getPurchasedCourses(userId)
         ]);
+        
+        console.log('AuthContext: Fetched courses:', {
+          created: created.length,
+          purchased: purchased.length,
+          purchasedCourses: purchased
+        });
         
         setCreatedCourses(created);
         setPurchasedCourses(purchased);

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, LogIn, UserPlus, Menu, X, ShoppingCart, User, LogOut, PlusCircle } from 'lucide-react';
+import { Search, LogIn, UserPlus, Menu, X, ShoppingCart, User, LogOut, PlusCircle, BookOpen } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 
@@ -48,7 +48,7 @@ export default function Header() {
     const name = user?.user_metadata?.name || '';
     return name
       .split(' ')
-      .map(part => part[0])
+      .map((part: string) => part[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -105,6 +105,15 @@ export default function Header() {
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                     <div className="py-1" role="menu">
+                      <Link
+                        to="/my-courses"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        role="menuitem"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        Mis Cursos
+                      </Link>
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -200,6 +209,13 @@ export default function Header() {
             </Link>
             {user ? (
               <>
+                <Link
+                  to="/my-courses"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                >
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Mis Cursos
+                </Link>
                 <Link
                   to="/profile"
                   className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"

@@ -330,6 +330,8 @@ export const courseService = {
   },
 
   async getPurchasedCourses(userId: string) {
+    console.log('courseService.getPurchasedCourses: Starting for user:', userId);
+    
     const { data, error } = await supabase
       .from('user_courses')
       .select(`
@@ -345,6 +347,8 @@ export const courseService = {
         )
       `)
       .eq('user_id', userId);
+
+    console.log('courseService.getPurchasedCourses: Query result:', { data, error });
 
     if (error) throw error;
 

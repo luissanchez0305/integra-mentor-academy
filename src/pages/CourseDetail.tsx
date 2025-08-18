@@ -178,13 +178,33 @@ export default function CourseDetail() {
                     )}
                   </div>
                 </div>
-                {courseData.instructor_id !== user?.id && !purchasedCourses.some(course => course.id === courseId) && (
+                {/* Check if user owns this course */}
+                {purchasedCourses.some(course => course.id === courseId) ? (
+                  <div className="space-y-3 mb-4">
+                    <button 
+                      onClick={() => navigate(`/course/${courseId}/learn`)}
+                      className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center"
+                    >
+                      <Play className="h-5 w-5 mr-2" />
+                      Ir al Curso
+                    </button>
+                    <p className="text-sm text-green-600 text-center font-medium">
+                      ✓ Ya tienes acceso a este curso
+                    </p>
+                  </div>
+                ) : courseData.instructor_id !== user?.id ? (
                   <button 
                     onClick={handleComprarAhora}
                     className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors mb-4"
                   >
                     Comprar ahora
                   </button>
+                ) : (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700 text-center">
+                      Este es tu curso
+                    </p>
+                  </div>
                 )}
 
                 <div className="space-y-4">

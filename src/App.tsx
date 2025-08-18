@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
@@ -9,6 +9,8 @@ import SearchResults from './pages/SearchResults';
 import Profile from './pages/Profile';
 import CourseDetail from './pages/CourseDetail';
 import CourseVideo from './pages/CourseVideo';
+import CourseLearning from './pages/CourseLearning';
+import MyCourses from './pages/MyCourses';
 import Cart from './pages/Cart';
 import CreateCourse from './pages/CreateCourse';
 
@@ -25,7 +27,9 @@ export default function App() {
             <Route path="/search" element={<SearchResults />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/course/:id" element={<CourseDetail />} />
-            <Route path="/course/:id/learn" element={<CourseVideo />} />
+            <Route path="/course/:id/watch" element={<CourseVideo />} />
+            <Route path="/course/:id/learn" element={<CourseLearning />} />
+            <Route path="/my-courses" element={<MyCourses />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/create-course" element={<CreateCourse />} />
             <Route path="/create-course/:id?" element={<CreateCourse />} />
