@@ -13,6 +13,8 @@ import CourseLearning from './pages/CourseLearning';
 import MyCourses from './pages/MyCourses';
 import Cart from './pages/Cart';
 import CreateCourse from './pages/CreateCourse';
+import SpecialCourseEthicalCulture from './pages/SpecialCourseEthicalCulture';
+import SpecialCourseEthicalCulture from './pages/SpecialCourseEthicalCulture';
 
 export default function App() {
   return (
@@ -33,6 +35,8 @@ export default function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/create-course" element={<CreateCourse />} />
             <Route path="/create-course/:id?" element={<CreateCourse />} />
+            <Route path="/special-course-ethical-culture" element={<SpecialCourseEthicalCulture />} />
+            <Route path="/special-course-ethical-culture" element={<SpecialCourseEthicalCulture />} />
           </Routes>
         </main>
         <Footer />
