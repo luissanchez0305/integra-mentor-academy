@@ -155,9 +155,6 @@ export default function CourseLearning() {
               if (duration > 0) {
                 const percentage = Math.min(100, Math.round((currentVideoTime / duration) * 100));
                 
-                // Store in ref to avoid re-renders
-                // currentTimeRef.current = currentVideoTime;
-                
                 // Only update completion percentage and duration when they actually change
                 // Don't update displayTime here to prevent video interruption
                 if (Math.abs(completionPercentage - percentage) >= 1) {
