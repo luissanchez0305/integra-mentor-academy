@@ -14,7 +14,6 @@ import MyCourses from './pages/MyCourses';
 import Cart from './pages/Cart';
 import CreateCourse from './pages/CreateCourse';
 import SpecialCourseEthicalCulture from './pages/SpecialCourseEthicalCulture';
-import SpecialCourseEthicalCulture from './pages/SpecialCourseEthicalCulture';
 
 export default function App() {
   return (
